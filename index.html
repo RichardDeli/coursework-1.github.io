@@ -1,1 +1,310 @@
-heyoo
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coursework 1</title>
+
+  <script src="https://unpkg.com/vue@2.7.8/dist/vue.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+
+  <section id="main">
+    <nav class="p-6 bg-indigo-500 text-white flex justify-between items-center">
+      <h1 class="text-lg font-bold">Coursework 1 - Vue Lessons</h1>
+
+      <button @click.prevent="toggleCart" class="flex items-center space-x-2 disabled:opacity-30"
+        :disabled="noOfItemsInCart === 0">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+        </svg>
+        <span>{{ noOfItemsInCart }}</span>
+      </button>
+    </nav>
+
+    <section id="lessons" class="p-6" v-if="!displayCart">
+      <div class="grid grid-cols-5 gap-4">
+        <section id="filters" class="space-y-4">
+          <input type="search" v-model="searchText" class="border p-2 focus:outline-indigo-500"
+            placeholder="Search lessons..." />
+
+          <div class="space-y-2">
+            <p>Sort by</p>
+
+            <div>
+              <div>
+                <input type="radio" name="sortOption" id="subject" value="subject" v-model="sortOption" />
+                <label for="subject">Subject</label>
+              </div>
+
+              <div>
+                <input type="radio" name="sortOption" id="location" value="location" v-model="sortOption" />
+                <label for="location">Location</label>
+              </div>
+
+              <div>
+                <input type="radio" name="sortOption" id="price" value="price" v-model="sortOption" />
+                <label for="price">Price</label>
+              </div>
+
+              <div>
+                <input type="radio" name="sortOption" id="availability" value="availability" v-model="sortOption" />
+                <label for="availability">Availability</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <p>Order by</p>
+
+            <div>
+              <div>
+                <input type="radio" name="orderOption" id="ascending" value="ascending" v-model="orderOption" />
+                <label for="ascending">Ascending</label>
+              </div>
+
+              <div>
+                <input type="radio" name="orderOption" id="descending" value="descending" v-model="orderOption" />
+                <label for="descending">Descending</label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="lessons" class="col-span-4 grid grid-cols-3 gap-4">
+
+          <div v-for="lesson in filteredLessons" :id="lesson.id" class="p-2 border rounded-lg">
+            <img :src="lesson.image" :alt="lesson.subject" class="w-full h-40 rounded-lg mb-2">
+
+            <p><strong>Subject: </strong> {{ lesson.subject }}</p>
+            <p><strong>Location: </strong> {{ lesson.location }}</p>
+            <p><strong>Price: </strong> £{{ lesson.price }}</p>
+            <p><strong>Spaces: </strong> {{ lesson.spaces }}</p>
+
+            <button @click.prevent="addToCart(lesson.id)" :disabled="lesson.spaces == 0"
+              class="text-sm bg-indigo-500 p-1 rounded text-white !mt-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-40">Add
+              to cart</button>
+          </div>
+
+        </section>
+      </div>
+    </section>
+
+    <section id="cart" v-else>
+      <div class="col-span-4 grid grid-cols-3 gap-4 p-6">
+
+        <div v-for="item in cart" :id="item.id" class="p-2 border rounded-lg">
+          <img :src="item.image" :alt="item.subject" class="w-full h-40 rounded-lg mb-2">
+
+          <p><strong>Subject: </strong> {{ item.subject }}</p>
+          <p><strong>Location: </strong> {{ item.location }}</p>
+          <p><strong>Price: </strong> £{{ item.price }}</p>
+
+          <button @click.prevent="removeFromCart(item.id)"
+            class="text-sm bg-indigo-500 p-1 rounded text-white !mt-2 focus:ring-indigo-500 focus:ring-offset-2">Remove
+            from cart</button>
+        </div>
+
+      </div>
+
+      <form @submit.prevent="checkout" class="flex flex-col space-y-3 m-6 p-4 border rounded-lg w-1/3">
+        <h5 class="font-semibold text-lg text-indigo-500">Checkout</h5>
+
+        <div class="w-full">
+          <input type="text" placeholder="Enter your name" class="border p-2 focus:outline-indigo-500 w-full"
+            v-model="form.name">
+          <small class="text-red-500 text-xs">{{ error.name }}</small>
+        </div>
+
+        <div class="w-full">
+          <input type="tel" placeholder="Enter your phone number" class="border p-2 focus:outline-indigo-500 w-full"
+            v-model="form.phone">
+          <small class="text-red-500 text-xs">{{ error.phone }}</small>
+        </div>
+
+        <button type="submit"
+          class="text-sm bg-indigo-500 p-2 rounded text-white !mt-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-30"
+          :disabled="!isFormValidated">Checkout</button>
+
+      </form>
+    </section>
+  </section>
+
+  </section>
+
+  <script type="module">
+    import lessons from "./lessons.js";
+    const app = new Vue({
+      el: "#main",
+      data: {
+        searchText: "",
+        sortOption: "",
+        orderOption: "",
+        cart: [],
+        form: {
+          name: "",
+          phone: "",
+        },
+        error: {
+          name: "",
+          phone: "",
+        },
+        displayCart: false,
+        lessons: lessons,
+      },
+      methods: {
+        addToCart(id) {
+          this.cart.push(
+            this.lessons.find(lesson => lesson.id === id)
+          );
+
+          this.lessons.find(lessonItem => {
+            if (lessonItem.id === id) lessonItem.spaces -= 1
+          })
+        },
+        removeFromCart(id) {
+          const index = this.cart.findIndex(function (cartItem) {
+            return cartItem.id === id;
+          });
+
+          this.cart.splice(index, 1);
+
+          this.lessons.find(lessonItem => {
+            if (lessonItem.id === id) lessonItem.spaces += 1
+          })
+
+          if (this.cart.length == 0) {
+            this.displayCart = false;
+          }
+        },
+        validate(field, value) {
+          switch (field) {
+            case "name":
+              if (value == "") {
+                this.error.name = "Please enter your name";
+              } else if (!/^[A-Za-z\s]*$/.test(value)) {
+                this.error.name = "Your name must only contain letters";
+              } else {
+                this.error.name = "";
+              }
+              break;
+            case "phone":
+              if (value == "") {
+                this.error.phone = "Please enter your phone number";
+              } else if (!/^[0-9]+$/.test(value)) {
+                this.error.phone =
+                  "Your phone number must only contain numbers";
+              } else {
+                this.error.phone = "";
+              }
+              break;
+          }
+        },
+        checkout() {
+          alert("Checked out successfully");
+
+          this.cart = [];
+
+          this.form["name"] = "";
+          this.form["phone"] = "";
+
+          window.location.reload()
+        },
+        toggleCart() {
+          this.displayCart = !this.displayCart
+        }
+      },
+      computed: {
+        noOfItemsInCart() {
+          return this.cart.length;
+        },
+
+        filteredLessons() {
+          let tempLessons = this.lessons;
+
+          if (this.searchText != "" && this.searchText) {
+            tempLessons = tempLessons.filter((item) => {
+              return (
+                item.subject
+                  .toLowerCase()
+                  .includes(this.searchText.toLowerCase()) ||
+                item.location
+                  .toLowerCase()
+                  .includes(this.searchText.toLowerCase())
+              );
+            });
+          }
+
+          tempLessons = tempLessons.sort((a, b) => {
+            if (this.sortOption == "subject") {
+              if (a.subject.toLowerCase() < b.subject.toLowerCase()) {
+                return -1;
+              }
+              if (a.subject.toLowerCase() > b.subject.toLowerCase()) {
+                return 1;
+              }
+              return 0;
+            } else if (this.sortOption == "location") {
+              if (a.location.toLowerCase() < b.location.toLowerCase()) {
+                return -1;
+              }
+              if (a.location.toLowerCase() > b.location.toLowerCase()) {
+                return 1;
+              }
+              return 0;
+            } else if (this.sortOption == "price") {
+              if (a.price < b.price) {
+                return -1;
+              }
+              if (a.price > b.price) {
+                return 1;
+              }
+              return 0;
+            } else if (this.sortOption == "availability") {
+              if (a.spaces < b.spaces) {
+                return -1;
+              }
+              if (a.spaces > b.spaces) {
+                return 1;
+              }
+              return 0;
+            }
+          });
+
+          if (this.orderOption === "descending") {
+            tempLessons.reverse();
+          }
+
+          return tempLessons;
+        },
+        isFormValidated() {
+          if (this.form.name && this.form.phone) {
+            return !this.error.name && !this.error.phone
+          }
+
+          return false
+        }
+      },
+      watch: {
+        "form.name": {
+          handler(value) {
+            this.validate('name', value);
+          }
+        },
+        "form.phone": {
+          handler(value) {
+            this.validate('phone', value);
+          }
+        },
+      },
+    });
+  </script>
+</body>
+
+</html>
